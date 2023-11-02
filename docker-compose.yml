@@ -1,0 +1,24 @@
+version: "3"
+
+services:
+  bot_hacker_rank:
+    build:
+      context: .
+    volumes:
+      - "./database.db:/app/database.db"
+      - "./logfile.log:/app/logs"
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 250M
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+        max_attempts: 2
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
