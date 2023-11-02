@@ -11,6 +11,7 @@ from database.crud_data import (get_data, update_data, get_data_organization_lea
 from database.crud_user import (get_user, update_user, insert_user)
 from database.models import User, DailyUserData
 from utils.api import (get_htb_data, get_rm_data, get_thm_data)
+from utils.services import update_all_daily_data
 from utils.ressources import setup_emoji
 
 logger = logging.getLogger(__name__)
@@ -69,7 +70,7 @@ def setup_bot(guild_id: int, channel_id: list[str]) -> discord.Bot:
         :return: None
         """
         logger.debug('Updating users score...')
-        # await update_all_daily_data()
+        await update_all_daily_data()
         logger.debug('Users score updated!')
 
     @bot.slash_command(
