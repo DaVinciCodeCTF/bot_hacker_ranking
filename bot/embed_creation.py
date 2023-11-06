@@ -6,6 +6,60 @@ from database.models import DailyUserData, User
 from utils.env_checker import get_organization_name
 
 
+def create_help_embed(author: discord.Member) -> discord.Embed:
+    """
+    Create the help embed
+    :param author: discord.Member, author of the command
+    :return: discord.Embed, help embed
+    """
+    orga: str = get_organization_name(log=False)
+
+    help_embed = discord.Embed(
+        title=f'{orga} bot help',
+        description=('Here\'s a list of the available commands. '
+                     'Use `/help <command>` to get more information about a specific command. 🔍\n\u200b'),
+        colour=discord.Colour.light_gray()
+    )
+    help_embed.add_field(
+        name='Display this message',
+        value='`/help`\n\u200b',
+        inline=False
+    )
+    help_embed.add_field(
+        name='Register you to the bot under the given pseudo',
+        value='`/register <pseudo>[required]`\n\u200b',
+        inline=False
+    )
+    help_embed.add_field(
+        name='After registering, update your profile with the given ids',
+        value='`/update <pseudo>[opt] <htb_id>[opt] <rm_id>[opt] <thm_id>[opt]`\n'
+              '• htb_id: [sign in](https://app.hackthebox.com/login) > [profile]('
+              'https://app.hackthebox.com/profile/overview) > #ID, next to your pseudo\n'
+              '• rm_id: [sign in](https://www.root-me.org/) > [profile]('
+              'https://www.root-me.org/?page=preferences&lang=en) > `uid` field, under `Modify my parameters`\n'
+              '• thm_id: [sign in](https://tryhackme.com/login) > [profile](https://tryhackme.com/profile) > '
+              '`username` field\n\u200b',
+        inline=False
+    )
+    help_embed.add_field(
+        name='Display the profile of a user, or yours if no user is given',
+        value='`/profile <user>[opt]`\n\u200b',
+        inline=False
+    )
+    help_embed.add_field(
+        name='Display the leaderboard of the given platform',
+        value='`/leaderboard <platform>(htb|rm|thm)[required]`',
+        inline=False
+    )
+
+    help_embed.timestamp = datetime.utcnow()
+    help_embed.set_footer(
+        text=f'Requested by {author.display_name}',
+        icon_url=author.avatar
+    )
+    return help_embed
+
+
 def create_leaderboard_embed(
         leaderboard_list: list[list[str, int, int, int, int]], platform: str, author: discord.Member
 ) -> discord.Embed:

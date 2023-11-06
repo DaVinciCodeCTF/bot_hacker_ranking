@@ -6,7 +6,7 @@ services:
       context: .
     volumes:
       - "./database.db:/app/database.db"
-      - "./logfile.log:/app/logs"
+      - "./logfile.log:/app/logfile.log"
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
     deploy:

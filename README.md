@@ -15,6 +15,7 @@ for [DaVinciCode](https://github.com/DaVinciCodeCTF).
 
 | Command                                          | Action                                                                |
 |:-------------------------------------------------|:----------------------------------------------------------------------|
+| `/help`                                          | Display the help message.                                             |
 | `/register <pseudo>`                             | Register the author of the command with the given pseudo.             |
 | `/update <?pseudo> <?htb_id> <?rm_id> <?thm_id>` | Update the author of the command with the given pseudo and ids.       |
 | `/profile <?pseudo>`                             | Display the profile of the author of the command or the given pseudo. |
@@ -47,22 +48,36 @@ Create a `.env` file with the following variables in the root of the project:
 
 ```
 DISCORD_TOKEN=discord_token
+RM_API_KEY=root_me_api_key
+
 DISCORD_GUILD_ID=guild_id
 DISCORD_CHANNEL_ID=[channel_id1, channel_id2, ...]
 ORGANIZATION_NAME=organization_name
 DATABASE_PATH=database_path
-RM_API_KEY=root_me_api_key
+UPDATE_INTERVAL=update_interval
+
+VAULT_TOKEN=vault_token
+VAULT_URL=vault_url
 ```
 
 1. `DISCORD_TOKEN`: Discord bot token, you can get one [here](https://discord.com/developers/applications). **Be careful
    to not share it.**
-2. `DISCORD_GUILD_ID`: Discord guild id, you can get it by activating the developer mode in Discord and right-clicking
+2. `RM_API_KEY`: Root Me API key, you can get one [here](https://www.root-me.org/?page=preferences&inc=infos).
+3. `DISCORD_GUILD_ID`: Discord guild id, you can get it by activating the developer mode in Discord and right-clicking
    on the guild.
-3. `DISCORD_CHANNEL_ID`: Discord channel id, you can get it by activating the developer mode in Discord and
+4. `DISCORD_CHANNEL_ID`: Discord channel id, you can get it by activating the developer mode in Discord and
    right-clicking on the channel.
-4. `ORGANIZATION_NAME`: Will be the name displayed on the embeds.
-5. `DATABASE_PATH`: Path to the database file, will be created if it doesn't exist.
-6. `RM_API_KEY`: Root Me API key, you can get one [here](https://www.root-me.org/?page=preferences&inc=infos).
+5. `ORGANIZATION_NAME`: Will be the name displayed on the embeds.
+6. `DATABASE_PATH`: Path to the database file, will be created if it doesn't exist.
+7. `UPDATE_INTERVAL`: Interval in minutes between each update of the leaderboard. (Suggestion: 240)
+
+**Optional:**
+
+If you want to use Vault to store the tokens, you will need to set up the following variables.
+In this case, the DISCORD_TOKEN & RM_API_KEY variables will be ignored.
+
+7. `VAULT_TOKEN`: Vault token, you can get one [here](https://vaultproject.io/).
+8. `VAULT_URL`: Vault url, you can get one [here](https://vaultproject.io/).
 
 ## Local development
 

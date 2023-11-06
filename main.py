@@ -6,7 +6,7 @@ from bot.core import setup_bot
 from database.manager import DatabaseManager
 from utils.env_checker import (
     get_discord_token, get_discord_guild_id, get_discord_channel_id,
-    get_organization_name, get_database_path, get_rm_api_key
+    get_organization_name, get_database_path, get_rm_api_key, get_update_interval
 )
 
 
@@ -17,6 +17,7 @@ def main() -> None:
     """
     logging.config.fileConfig(fname='logging.conf', disable_existing_loggers=True)
     logger = logging.getLogger('root')
+    logger_discord = logging.getLogger('discord')
 
     logger.info('Starting bot...')
 
@@ -25,11 +26,17 @@ def main() -> None:
     discord_channel_id: list[str] = get_discord_channel_id()
     organization_name: str = get_organization_name()
     database_path: str = get_database_path()
+    update_interval: int = get_update_interval()
     rm_api_key: str = get_rm_api_key()
 
     DatabaseManager(database_path).create_database()
 
-    bot_instance: discord.Bot = setup_bot(guild_id=discord_guild_id, channel_id=discord_channel_id)
+    bot_instance: discord.Bot = setup_bot(
+        guild_id=discord_guild_id,
+        channel_id=discord_channel_id,
+        update_interval=update_interval,
+    )
+
     bot_instance.run(discord_token)
 
 

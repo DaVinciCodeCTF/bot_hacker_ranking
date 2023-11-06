@@ -5,19 +5,19 @@ from datetime import datetime
 import discord
 from discord.ext import tasks
 
-from bot.embed_creation import create_profile_embed
+from bot.embed_creation import create_profile_embed, create_help_embed
 from bot.pagination_view import PaginationView
 from database.crud_data import (get_data, update_data, get_data_organization_leaderboard, get_organization_rank)
 from database.crud_user import (get_user, update_user, insert_user)
 from database.models import User, DailyUserData
 from utils.api import (get_htb_data, get_rm_data, get_thm_data)
-from utils.services import update_all_daily_data
 from utils.ressources import setup_emoji
+from utils.services import update_all_daily_data
 
 logger = logging.getLogger(__name__)
 
 
-def setup_bot(guild_id: int, channel_id: list[str]) -> discord.Bot:
+def setup_bot(guild_id: int, channel_id: list[str], update_interval: int) -> discord.Bot:
     bot = discord.Bot()
     guild_emojis: dict = {}
 
@@ -63,7 +63,7 @@ def setup_bot(guild_id: int, channel_id: list[str]) -> discord.Bot:
         """
         return str(ctx.channel.id) in channel_id
 
-    @tasks.loop(minutes=60)
+    @tasks.loop(minutes=update_interval)
     async def update_users_score() -> None:
         """
         Every hour, update all users score, will create a new DailyUserData if it doesn't exist
@@ -345,5 +345,19 @@ def setup_bot(guild_id: int, channel_id: list[str]) -> discord.Bot:
 
         pagination_view = PaginationView(leaderboard_list, platform, ctx.author)
         await pagination_view.respond(ctx)
+
+    @bot.slash_command(
+        name='help',
+        description='Display the help message',
+        guild_ids=[guild_id]
+    )
+    async def help_(ctx) -> None:
+        """
+        Display the help message
+        :param ctx: ApplicationContext, automatically passed
+        :return: None
+        """
+        help_embed: discord.embed = create_help_embed(author=ctx.author)
+        await ctx.respond(embed=help_embed, ephemeral=True)
 
     return bot
