@@ -55,7 +55,7 @@ def create_help_embed(author: discord.Member) -> discord.Embed:
     help_embed.timestamp = datetime.utcnow()
     help_embed.set_footer(
         text=f'Requested by {author.display_name}',
-        icon_url=author.avatar
+        icon_url=author.avatar if author.avatar else None
     )
     return help_embed
 
@@ -117,7 +117,7 @@ def create_leaderboard_embed(
     leaderboard_embed.timestamp = datetime.utcnow()
     leaderboard_embed.set_footer(
         text=f'Requested by {author.display_name}',
-        icon_url=author.avatar
+        icon_url=author.avatar if author.avatar else None
     )
     return leaderboard_embed
 
@@ -179,10 +179,11 @@ def create_profile_embed(
                   '-----------------',
             inline=True
         )
-    profile_embed.set_thumbnail(url=member.avatar)
+    if member.avatar:
+        profile_embed.set_thumbnail(url=member.avatar)
     profile_embed.timestamp = datetime.utcnow()
     profile_embed.set_footer(
         text=f'Requested by {author.display_name}',
-        icon_url=author.avatar
+        icon_url=author.avatar if author.avatar else None
     )
     return profile_embed

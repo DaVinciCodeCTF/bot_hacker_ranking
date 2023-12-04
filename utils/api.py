@@ -62,11 +62,11 @@ async def get_rm_data(rm_id: int, rm_name_check: bool = False) -> dict:
             rm_data['rm_rank']: int = int(data['position']) if data['position'] else 0
             rm_data['rm_score']: int = int(data['score'])
             if rm_name_check:
-                rm_name: str = data['nom'] + '-' + str(rm_id)
+                rm_name: str = data['nom'].replace(' ', '-') + '-' + str(rm_id)
                 response: Response = get(f'https://www.root-me.org/{rm_name}', headers=HEADERS, cookies=cookies)
                 if response.status_code == 404:
-                    rm_name: str = rm_name.split('-')[0]
-                rm_data['rm_name']: str = rm_name
+                    rm_name: str = '-'.join(rm_name.split('-')[:-1])
+                rm_data['rm_name']: str = rm_name.replace(' ', '-')
             logger.debug(f'RM data retrieved for {rm_id}: {rm_data["rm_rank"]}, {rm_data["rm_score"]}')
             return rm_data
     except RequestException as e:

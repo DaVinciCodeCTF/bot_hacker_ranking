@@ -52,6 +52,7 @@ def get_data_organization_leaderboard(platform: str, date: datetime.date = datet
             ]
             for index, user in enumerate(organization_leaderboard_raw) if getattr(user, score_key)
         ]
+
         logger.debug(f'Organization leaderboard retrieved from the database: {organization_leaderboard}')
     return organization_leaderboard
 
@@ -66,11 +67,14 @@ def _calculate_score_evolution(user, score_key, date) -> int:
     """
     thirty_days_ago = date - timedelta(days=30)
     old_data = get_data(user.discord_id, thirty_days_ago)
-    if not old_data:
+    if not old_data or not getattr(old_data, score_key):
         with SessionLocal() as db:
             old_data = (
                 db.query(DailyUserData)
-                .filter(DailyUserData.discord_id == user.discord_id)
+                .filter(
+                    DailyUserData.discord_id == user.discord_id,
+                    getattr(DailyUserData, score_key) > 0
+                )
                 .order_by(DailyUserData.date)
                 .first()
             )
