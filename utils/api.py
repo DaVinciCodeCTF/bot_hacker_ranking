@@ -5,13 +5,15 @@ import os
 from dotenv import load_dotenv
 from requests import get, Response, RequestException
 
+from utils.env_checker import get_rm_api_key
+
 logger = logging.getLogger(__name__)
 load_dotenv()
 
 HTB_API: str = 'https://www.hackthebox.com/api/v4/profile/'
 RM_API: str = 'https://api.www.root-me.org/auteurs/'
 THM_API: str = 'https://tryhackme.com/api/'
-RM_API_KEY: str = os.getenv('RM_API_KEY')
+RM_API_KEY: str = get_rm_api_key()
 SLEEP_API_REQUEST: float = 0.2
 HEADERS: dict = {'User-Agent': 'HackerRanker/1.0'}
 

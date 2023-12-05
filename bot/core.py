@@ -167,6 +167,10 @@ def setup_bot(guild_id: int, channel_id: list[str], update_interval: int) -> dis
         updates_user: dict = {}
         updates_daily_data: dict = {}
 
+        await ctx.defer(
+            ephemeral=True
+        )
+
         if not user:
             await ctx.respond(
                 ':no_entry_sign: You need to register using the `/register` command first.',
@@ -190,6 +194,7 @@ def setup_bot(guild_id: int, channel_id: list[str], update_interval: int) -> dis
                     return None
                 else:
                     updates_user['username']: str = username
+
             if htb_id:
                 if re.match(r'^([0-9]{1,9})$', str(htb_id)) is None:
                     await ctx.respond(
