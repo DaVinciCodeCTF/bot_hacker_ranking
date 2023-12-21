@@ -17,7 +17,6 @@ def main() -> None:
     """
     logging.config.fileConfig(fname='logging.conf', disable_existing_loggers=True)
     logger = logging.getLogger('root')
-    logger_discord = logging.getLogger('discord')
 
     logger.info('Starting bot...')
 
