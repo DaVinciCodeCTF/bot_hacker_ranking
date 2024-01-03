@@ -58,6 +58,11 @@ UPDATE_INTERVAL=update_interval
 
 VAULT_TOKEN=vault_token
 VAULT_URL=vault_url
+
+DEV_MODE=dev_mode
+DEV_DISCORD_GUILD_ID=dev_guild_id
+DEV_DISCORD_CHANNEL_ID=[dev_channel_id1, dev_channel_id2, ...]
+DEV_DISCORD_TOKEN=dev_discord_token
 ```
 
 1. `DISCORD_TOKEN`: Discord bot token, you can get one [here](https://discord.com/developers/applications). **Be careful
@@ -78,6 +83,19 @@ In this case, the DISCORD_TOKEN & RM_API_KEY variables will be ignored.
 
 7. `VAULT_TOKEN`: Vault token, you can get one [here](https://vaultproject.io/).
 8. `VAULT_URL`: Vault url, you can get one [here](https://vaultproject.io/).
+
+**Development:**
+
+If you want to run the bot in development mode, you will need to set up the following variables.
+Instead of running the bot on the main guild, it will run on the development guild.
+
+9. `DEV_MODE`: Set to `True` to run the bot in development mode (default: `False`).
+10. `DEV_DISCORD_GUILD_ID`: Discord guild id, you can get it by activating the developer mode in Discord and
+    right-clicking on the guild.
+11. `DEV_DISCORD_CHANNEL_ID`: Discord channel id, you can get it by activating the developer mode in Discord and
+    right-clicking on the channel.
+12. `DEV_DISCORD_TOKEN`: Discord bot token, you can get one [here](https://discord.com/developers/applications). **Be
+    careful to not share it.**
 
 ## Local development
 

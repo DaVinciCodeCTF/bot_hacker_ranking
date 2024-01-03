@@ -16,6 +16,7 @@ class User(Base):
 
     discord_id: int = Column(Integer, primary_key=True, index=True, comment='Discord ID of the user')
     username: str = Column(String, index=True, comment='Username of the user visible on the leaderboard')
+    active: bool = Column(Integer, default=True, comment='Whether the user is active or not')
 
     # External platform IDs
     htb_id: int = Column(Integer, comment='HackTheBox UID of the user, visible on https://app.hackthebox.com/profile/')

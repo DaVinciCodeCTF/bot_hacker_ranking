@@ -1,9 +1,8 @@
-import asyncio
 import logging
-import os
 
 from dotenv import load_dotenv
 from requests import get, Response, RequestException
+from asyncio import sleep
 
 from utils.env_checker import get_rm_api_key
 
@@ -14,7 +13,7 @@ HTB_API: str = 'https://www.hackthebox.com/api/v4/profile/'
 RM_API: str = 'https://api.www.root-me.org/auteurs/'
 THM_API: str = 'https://tryhackme.com/api/'
 RM_API_KEY: str = get_rm_api_key()
-SLEEP_API_REQUEST: float = 0.2
+SLEEP_API_REQUEST: float = 0.1
 HEADERS: dict = {'User-Agent': 'HackerRanker/1.0'}
 
 
@@ -27,7 +26,7 @@ async def get_htb_data(htb_id: int) -> dict:
     """
     try:
         response: Response = get(HTB_API + str(htb_id), headers=HEADERS)
-        await asyncio.sleep(SLEEP_API_REQUEST)
+        await sleep(SLEEP_API_REQUEST)
         response.raise_for_status()
         data = response.json()
         if 'profile' not in data:
@@ -55,7 +54,7 @@ async def get_rm_data(rm_id: int, rm_name_check: bool = False) -> dict:
         rm_data: dict = {}
         cookies: dict = {'api_key': RM_API_KEY}
         response: Response = get(RM_API + str(rm_id), headers=HEADERS, cookies=cookies)
-        await asyncio.sleep(SLEEP_API_REQUEST)
+        await sleep(SLEEP_API_REQUEST)
         data = response.json()
         if 'score' not in data:
             logger.warning(f'Couldn\'t get RM data for {rm_id}. Error: {data}')
@@ -85,11 +84,11 @@ async def get_thm_data(thm_id: str) -> dict:
     """
     try:
         response: Response = get(THM_API + 'user/rank/' + thm_id, headers=HEADERS)
-        await asyncio.sleep(SLEEP_API_REQUEST)
+        await sleep(SLEEP_API_REQUEST)
         response.raise_for_status()
         data_rank = response.json()
         response: Response = get(THM_API + 'no-completed-rooms-public/' + thm_id, headers=HEADERS)
-        await asyncio.sleep(SLEEP_API_REQUEST)
+        await sleep(SLEEP_API_REQUEST)
         response.raise_for_status()
         data_rooms = response.json()
         if 'userRank' not in data_rank or int(data_rooms) == 0:

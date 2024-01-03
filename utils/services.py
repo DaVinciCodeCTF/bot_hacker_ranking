@@ -1,5 +1,5 @@
 from database.crud_data import update_data
-from database.crud_user import get_all_users
+from database.crud_user import get_active_users, deactivate_user, get_deactivated_users, activate_user, delete_user
 from database.models import User, DailyUserData
 from utils.api import get_htb_data, get_rm_data, get_thm_data
 
@@ -10,26 +10,44 @@ async def update_daily_data(user: User) -> DailyUserData:
     :param user: User, user to update
     :return: DailyUserData, updated daily data
     """
-    if user.htb_id is None and user.rm_id is None and user.thm_id is None:
+    if not any([user.htb_id, user.rm_id, user.thm_id]):
         return user
+
     daily_data: dict = {}
-    if user.htb_id:
-        htb_data: dict = await get_htb_data(user.htb_id)
-        daily_data.update(htb_data)
-    if user.rm_id:
-        rm_data: dict = await get_rm_data(user.rm_id)
-        daily_data.update(rm_data)
-    if user.thm_id:
-        thm_data: dict = await get_thm_data(user.thm_id)
-        daily_data.update(thm_data)
+    user_ids: dict = {'htb': user.htb_id, 'rm': user.rm_id, 'thm': user.thm_id}
+    data_fetchers: dict = {'htb': get_htb_data, 'rm': get_rm_data, 'thm': get_thm_data}
+
+    for platform, user_id in user_ids.items():
+        if user_id:
+            daily_data.update(await data_fetchers[platform](user_id))
+
     return update_data(user.discord_id, daily_data)
 
 
-async def update_all_daily_data() -> None:
+async def update_all_daily_data(members_id: list[int], dev_mode: bool) -> None:
     """
     Update the daily datas of all users
     :return: None
     """
-    users: list[User] = get_all_users()
+    users: list[User] = get_active_users()
+
+    if not dev_mode:
+        # Remove users with no ids
+        for user in users:
+            if not any([user.htb_id, user.rm_id, user.thm_id]):
+                users.remove(user)
+                delete_user(user)
+        # Remove users that are not in the server anymore
+        for user in users:
+            if user.discord_id not in members_id:
+                users.remove(user)
+                deactivate_user(user)
+        # Check if deactivated users are back in the server
+        users_deactivated: list[User] = get_deactivated_users()
+        for user in users_deactivated:
+            if user.discord_id in members_id:
+                users.append(user)
+                activate_user(user)
+
     for user in users:
         await update_daily_data(user)

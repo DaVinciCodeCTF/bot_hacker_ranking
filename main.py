@@ -6,7 +6,8 @@ from bot.core import setup_bot
 from database.manager import DatabaseManager
 from utils.env_checker import (
     get_discord_token, get_discord_guild_id, get_discord_channel_id,
-    get_organization_name, get_database_path, get_rm_api_key, get_update_interval
+    get_organization_name, get_database_path, get_rm_api_key, get_update_interval,
+    get_dev_mode
 )
 
 
@@ -20,9 +21,10 @@ def main() -> None:
 
     logger.info('Starting bot...')
 
-    discord_token: str = get_discord_token()
-    discord_guild_id: int = get_discord_guild_id()
-    discord_channel_id: list[str] = get_discord_channel_id()
+    dev_mode: bool = get_dev_mode()
+    discord_token: str = get_discord_token(dev_mode)
+    discord_guild_id: int = get_discord_guild_id(dev_mode)
+    discord_channel_id: list[int] = get_discord_channel_id(dev_mode)
     organization_name: str = get_organization_name()
     database_path: str = get_database_path()
     update_interval: int = get_update_interval()
@@ -34,6 +36,8 @@ def main() -> None:
         guild_id=discord_guild_id,
         channel_id=discord_channel_id,
         update_interval=update_interval,
+        organization_name=organization_name,
+        dev_mode=dev_mode,
     )
 
     bot_instance.run(discord_token)

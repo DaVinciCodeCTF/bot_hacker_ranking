@@ -34,8 +34,8 @@ class DatabaseManager:
         :param database_path: str, path to the database
         :return: None
         """
-        DATABASE_URL: str = f'sqlite:///{database_path}'
-        cls._engine = create_engine(DATABASE_URL)
+        database_url: str = f'sqlite:///{database_path}'
+        cls._engine = create_engine(database_url)
         cls._session_local = sessionmaker(bind=cls._engine)
         Base.metadata.create_all(bind=cls._engine)
         logger.info('Database initialized successfully.')
@@ -65,7 +65,7 @@ class DatabaseManager:
             if created_tables:
                 logger.info(f'Database created successfully. Tables created: {", ".join(created_tables)}')
             else:
-                logger.info('Database already exists. No tables were created.')
+                logger.debug('Database already exists. No tables were created.')
 
         except exc.SQLAlchemyError as e:
             logger.error(f'An error occurred while creating the database: {str(e)}')

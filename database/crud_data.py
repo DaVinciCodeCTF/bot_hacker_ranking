@@ -1,9 +1,10 @@
 import logging
 from datetime import datetime, timedelta
 
+from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
 
-from database.crud_user import get_user
+from database.crud_user import get_user, get_active_users
 from database.manager import DatabaseManager
 from database.models import DailyUserData
 
@@ -20,40 +21,49 @@ def get_data(discord_id: int, date: datetime.date = datetime.now().date()) -> Da
     """
     with SessionLocal() as db:
         daily_user = db.query(DailyUserData).filter_by(discord_id=discord_id, date=date).first()
-        logger.debug(f'Daily data retrieved from the database: {daily_user}')
     return daily_user
 
 
-def get_data_organization_leaderboard(platform: str, date: datetime.date = datetime.now().date()) \
-        -> list[list[str, int, int, int, int]]:
+def get_data_organization_leaderboard(platform: str, date: datetime.date = datetime.now().date()) -> list[dict]:
     """
     Get the daily leaderboard of the organization members
     Date is set to today by default and users are sorted by their score on the given platform
     :param platform: str, platform to get the ranking from
     :param date: datetime.date, date of the data to get
-    :return: list[DailyUserData], ranking of the users, this is a list of lists containing: username,
-    platform organization rank, platform score, platform global rank, score evolution during 30 last days
+    :return: list[dict], daily leaderboard of the organization members
     """
     score_key = f'{platform}_score' if platform in ['htb', 'rm'] else f'{platform}_rooms'
     with SessionLocal() as db:
+        profiles_ids: dict = {
+            user.discord_id: getattr(user, f'{platform}_id' if platform in ['htb', 'thm'] else f'{platform}_name')
+            for user in get_active_users()
+        }
+
+        discord_ids_list: list[int] = list(profiles_ids.keys())
+
         organization_leaderboard_raw = (
             db.query(DailyUserData)
-            .filter(DailyUserData.date == date)
+            .filter(and_(DailyUserData.date == date, DailyUserData.discord_id.in_(discord_ids_list)))
             .order_by(getattr(DailyUserData, score_key).desc())
             .all()
         )
-        organization_leaderboard: list[list[str, int, int, int, int]] = [
-            [
-                get_user(discord_id=user.discord_id).username,
-                index + 1,
-                getattr(user, score_key),
-                getattr(user, f'{platform}_rank'),
-                _calculate_score_evolution(user, score_key, date)
-            ]
+
+        organization_leaderboard: list[dict] = [
+            {
+                'username': get_user(discord_id=user.discord_id).username,
+                'platform_rank': index + 1,
+                'platform_score': getattr(user, score_key),
+                'platform_global_rank': getattr(user, f'{platform}_rank'),
+                'score_evolution': _calculate_score_evolution(user, score_key, date),
+                'platform_id': profiles_ids.get(user.discord_id)
+            }
             for index, user in enumerate(organization_leaderboard_raw) if getattr(user, score_key)
         ]
 
-        logger.debug(f'Organization leaderboard retrieved from the database: {organization_leaderboard}')
+        logger.debug(f'Organization leaderboard retrieved from the database.')
+        for user in organization_leaderboard:
+            logger.debug(user)
+
     return organization_leaderboard
 
 

@@ -17,8 +17,17 @@ from utils.services import update_all_daily_data
 logger = logging.getLogger(__name__)
 
 
-def setup_bot(guild_id: int, channel_id: list[str], update_interval: int) -> discord.Bot:
-    bot = discord.Bot()
+def setup_bot(
+        guild_id: int,
+        channel_id: list[int],
+        update_interval: int,
+        organization_name: str,
+        dev_mode: bool = False
+) -> discord.Bot:
+    intents = discord.Intents.default()
+    intents.members = True
+    bot = discord.Bot(intents=intents)
+
     guild_emojis: dict = {}
 
     @bot.event
@@ -28,8 +37,8 @@ def setup_bot(guild_id: int, channel_id: list[str], update_interval: int) -> dis
         :return:
         """
         await bot.wait_until_ready()
-        await setup_emoji(bot, guild_id)
 
+        await setup_emoji(bot, guild_id)
         guild_emojis.update({'HTB_logo': discord.utils.get(bot.emojis, name='HTB_logo')})
         guild_emojis.update({'RM_logo': discord.utils.get(bot.emojis, name='RM_logo')})
         guild_emojis.update({'THM_logo': discord.utils.get(bot.emojis, name='THM_logo')})
@@ -61,16 +70,20 @@ def setup_bot(guild_id: int, channel_id: list[str], update_interval: int) -> dis
         :param ctx: ApplicationContext, automatically passed
         :return: bool, True if the command is launched in the right channel, False otherwise
         """
-        return str(ctx.channel.id) in channel_id
+        return ctx.channel.id in channel_id
 
     @tasks.loop(minutes=update_interval)
     async def update_users_score() -> None:
         """
-        Every hour, update all users score, will create a new DailyUserData if it doesn't exist
+        Every hour, update all users score,
+        will create a new DailyUserData if it doesn't exist
+        and will delete the user if it doesn't exist anymore
         :return: None
         """
+        members_ids: list[int] = [member.id for member in bot.get_guild(guild_id).members]
+
         logger.debug('Updating users score...')
-        await update_all_daily_data()
+        await update_all_daily_data(members_ids, dev_mode)
         logger.debug('Users score updated!')
 
     @bot.slash_command(
@@ -154,6 +167,7 @@ def setup_bot(guild_id: int, channel_id: list[str], update_interval: int) -> dis
         :param rm_id: int, RootMe user ID of the user
         :param thm_id: str, TryHackMe user ID of the user
         """
+        logger.debug(f'User @{ctx.author} updating profile: {username=}, {htb_id=}, {rm_id=}, {thm_id=}')
 
         if not username and not htb_id and not rm_id and not thm_id:
             await ctx.respond(
@@ -167,9 +181,7 @@ def setup_bot(guild_id: int, channel_id: list[str], update_interval: int) -> dis
         updates_user: dict = {}
         updates_daily_data: dict = {}
 
-        await ctx.defer(
-            ephemeral=True
-        )
+        await ctx.defer(ephemeral=True)
 
         if not user:
             await ctx.respond(
@@ -257,18 +269,22 @@ def setup_bot(guild_id: int, channel_id: list[str], update_interval: int) -> dis
                         updates_daily_data['thm_rooms']: int = thm_data['thm_rooms']
 
             if updates_user or updates_daily_data:
-                logger.debug(f'Updating user {user.username} with {updates_user=} & {updates_daily_data=}')
                 user: User = update_user(user, updates_user)
                 daily_user_data: DailyUserData = update_data(user.discord_id, updates_daily_data)
                 orga_user_rank: dict = get_organization_rank(user.discord_id)
+
+                logger.debug(f'User @{user.username} updated: {user=}, {daily_user_data=}, {orga_user_rank=}')
+
                 profile_embed: discord.Embed = create_profile_embed(
-                    user, daily_user_data, orga_user_rank, ctx.author, ctx.author, guild_emojis
+                    user, daily_user_data, orga_user_rank, ctx.author, ctx.author, guild_emojis, organization_name
                 )
+
                 await ctx.respond(
                     ':white_check_mark: Your profile has been updated!',
                     embed=profile_embed,
                     ephemeral=True
                 )
+
                 return None
 
     @bot.slash_command(
@@ -309,11 +325,29 @@ def setup_bot(guild_id: int, channel_id: list[str], update_interval: int) -> dis
             await ctx.respond(message, ephemeral=True)
             return None
 
-        daily_user_data: DailyUserData = get_data(member.id, datetime.now().date())
+        await ctx.defer()
+
+        updates_daily_data: dict = {}
+        if user.htb_id:
+            htb_data = await get_htb_data(user.htb_id)
+            updates_daily_data['htb_rank']: int = htb_data['htb_rank']
+            updates_daily_data['htb_score']: int = htb_data['htb_score']
+        if user.rm_id:
+            rm_data = await get_rm_data(user.rm_id)
+            updates_daily_data['rm_rank']: int = rm_data['rm_rank']
+            updates_daily_data['rm_score']: int = rm_data['rm_score']
+        if user.thm_id:
+            thm_data = await get_thm_data(user.thm_id)
+            updates_daily_data['thm_rank']: int = thm_data['thm_rank']
+            updates_daily_data['thm_rooms']: int = thm_data['thm_rooms']
+
+        daily_user_data: DailyUserData = update_data(user.discord_id, updates_daily_data)
         orga_user_rank: dict = get_organization_rank(member.id)
 
+        logger.debug(f'User @{user.username} profile displayed: {user=}, {daily_user_data=}, {orga_user_rank=}')
+
         profile_embed: discord.Embed = create_profile_embed(
-            user, daily_user_data, orga_user_rank, author, member, guild_emojis
+            user, daily_user_data, orga_user_rank, author, member, guild_emojis, organization_name
         )
 
         await ctx.respond(embed=profile_embed)
@@ -345,10 +379,10 @@ def setup_bot(guild_id: int, channel_id: list[str], update_interval: int) -> dis
             )
             return None
 
-        leaderboard_list: list[list[str, int, int, int, int]] = get_data_organization_leaderboard(platform)
+        leaderboard_list: list[dict] = get_data_organization_leaderboard(platform)
         logger.debug(f'Leaderboard {platform=} {leaderboard_list=}')
 
-        pagination_view = PaginationView(leaderboard_list, platform, ctx.author)
+        pagination_view = PaginationView(leaderboard_list, platform, ctx.author, organization_name)
         await pagination_view.respond(ctx)
 
     @bot.slash_command(
@@ -362,7 +396,7 @@ def setup_bot(guild_id: int, channel_id: list[str], update_interval: int) -> dis
         :param ctx: ApplicationContext, automatically passed
         :return: None
         """
-        help_embed: discord.embed = create_help_embed(author=ctx.author)
+        help_embed: discord.embed = create_help_embed(author=ctx.author, organization_name=organization_name)
         await ctx.respond(embed=help_embed, ephemeral=True)
 
     return bot

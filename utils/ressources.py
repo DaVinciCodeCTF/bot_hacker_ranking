@@ -1,3 +1,4 @@
+import logging
 import discord
 from discord.ext import commands
 
@@ -7,11 +8,13 @@ emoji_icon_assets = {
     'THM_logo': 'resources/THM_logo.png',
 }
 
+logger = logging.getLogger(__name__)
+
 
 async def setup_emoji(bot: commands.Bot, guild_id: int) -> None:
     guild = bot.get_guild(guild_id)
     if guild is None:
-        print(f"Couldn't find the guild with ID {guild_id}")
+        logger.error(f'Guild {guild_id} not found.')
         return
 
     for name, path in emoji_icon_assets.items():
@@ -20,3 +23,6 @@ async def setup_emoji(bot: commands.Bot, guild_id: int) -> None:
             with open(path, 'rb') as f:
                 image = f.read()
             await guild.create_custom_emoji(name=name, image=image)
+            logger.info(f'Emoji {name} created.')
+
+    logger.info('Emoji setup done.')

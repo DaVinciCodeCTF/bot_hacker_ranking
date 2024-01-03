@@ -9,16 +9,18 @@ class PaginationView(discord.ui.View):
 
     def __init__(
             self,
-            leaderboard_list: list[list[str, int, int, int, int]],
+            leaderboard_list: list[dict],
             platform: str,
             author: discord.Member,
+            organization_name: str,
             sep: int = 10,
             current_page: int = 1,
     ):
         super().__init__(timeout=None)
-        self.leaderboard_list: list[list[str, int, int, int, int]] = leaderboard_list
+        self.leaderboard_list: list[dict] = leaderboard_list
         self.platform: str = platform
         self.author: discord.Member = author
+        self.organization_name: str = organization_name
         self.sep: int = sep
         self.current_page: int = current_page
         self.message = None
@@ -27,14 +29,24 @@ class PaginationView(discord.ui.View):
         await ctx.defer()
         self.update_buttons()
         self.message = await ctx.respond(
-            embed=create_leaderboard_embed(self.get_current_page_data(), self.platform, self.author),
+            embed=create_leaderboard_embed(
+                self.get_current_page_data(),
+                self.platform,
+                self.author,
+                self.organization_name
+            ),
             view=self
         )
 
-    async def update_message(self, leaderboard_list: list[list[str, int, int, int, int]]):
+    async def update_message(self, leaderboard_list: list[dict]):
         self.update_buttons()
         await self.message.edit(
-            embed=create_leaderboard_embed(leaderboard_list, self.platform, self.author),
+            embed=create_leaderboard_embed(
+                leaderboard_list,
+                self.platform,
+                self.author,
+                self.organization_name
+            ),
             view=self
         )
 
