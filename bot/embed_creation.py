@@ -125,6 +125,8 @@ def build_user_stats(user: dict, platform_info: PlatformInfo) -> str:
     score_display = 'Score' if platform_info.name in ['HackTheBox', 'RootMe'] else 'Rooms'
 
     stats = f'[+]({platform_info.profile}{platform_id}) '
+    if platform_info.name == 'RootMe' and platform_id.startswith('?'):
+        stats = f'[+](https://www.root-me.org/?page=recherche&lang=en&recherche={platform_id[1:]}) '
     stats += f'Global rank: `#{global_rank}` - {score_display}: `{score}` '
 
     if score_evolution > 0:
@@ -158,11 +160,14 @@ def build_platform_info(
         score = getattr(db_data, f'{platform_s}_score' if platform_s in ['htb', 'rm'] else f'{platform_s}_rooms', '...')
         user_id = getattr(db_user, f'{platform_s}_id', '...')
         user_n = getattr(db_user, f'{platform_s}_id' if platform_s in ['htb', 'thm'] else f'{platform_s}_name', '...')
+        user_link = f'{platform.profile}{user_n}'
+        if platform.name == 'RootMe' and user_n.startswith('?'):
+            user_link = f'https://www.root-me.org/?page=recherche&lang=en&recherche={user_n[1:]}'
         return ('-----------------\n'
                 f'{org_name} rank: `#{platform_rank if platform_rank else "..."}`\n\n'
                 f'Rank: `#{rank if rank else "..."}`\n'
                 f'{"Rooms" if platform_s == "thm" else "Score"}: `{score if score else "..."}`\n\n'
-                f'ID: [{user_id}]({platform.profile}{user_n})\n'
+                f'ID: [{user_id}]({user_link})\n'
                 '-----------------')
     return ''
 

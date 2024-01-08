@@ -1,8 +1,8 @@
 import logging
+from asyncio import sleep
 
 from dotenv import load_dotenv
 from requests import get, Response, RequestException
-from asyncio import sleep
 
 from utils.env_checker import get_rm_api_key
 
@@ -25,8 +25,8 @@ async def get_htb_data(htb_id: int) -> dict:
     :return: dict, HackTheBox data {'htb_rank': int, 'htb_score': int}
     """
     try:
-        response: Response = get(HTB_API + str(htb_id), headers=HEADERS)
         await sleep(SLEEP_API_REQUEST)
+        response: Response = get(HTB_API + str(htb_id), headers=HEADERS)
         response.raise_for_status()
         data = response.json()
         if 'profile' not in data:
@@ -42,19 +42,20 @@ async def get_htb_data(htb_id: int) -> dict:
         return {}
 
 
-async def get_rm_data(rm_id: int, rm_name_check: bool = False) -> dict:
+async def get_rm_data(rm_id: int, fast_mode: bool = False) -> dict:
     """
     Get the RootMe data of a user
     https://www.root-me.org/fr/breve/API-api-www-root-me-org
     :param rm_id: int, RootMe user ID
-    :param rm_name_check: bool, check if the RootMe is unique
+    :param fast_mode: bool, if True, reduce delay between requests
     :return: dict, RootMe data {'rm_rank': int, 'rm_score': int}
     """
+    retry_delay: float = 0.5 if fast_mode else 5
     try:
         rm_data: dict = {}
         cookies: dict = {'api_key': RM_API_KEY}
+        await sleep(retry_delay)
         response: Response = get(RM_API + str(rm_id), headers=HEADERS, cookies=cookies)
-        await sleep(SLEEP_API_REQUEST)
         data = response.json()
         if 'score' not in data:
             logger.warning(f'Couldn\'t get RM data for {rm_id}. Error: {data}')
@@ -62,13 +63,20 @@ async def get_rm_data(rm_id: int, rm_name_check: bool = False) -> dict:
         else:
             rm_data['rm_rank']: int = int(data['position']) if data['position'] else 0
             rm_data['rm_score']: int = int(data['score'])
-            if rm_name_check:
+            if not fast_mode:
                 rm_name: str = data['nom'].replace(' ', '-') + '-' + str(rm_id)
+                await sleep(retry_delay)
                 response: Response = get(f'https://www.root-me.org/{rm_name}', headers=HEADERS, cookies=cookies)
                 if response.status_code == 404:
                     rm_name: str = '-'.join(rm_name.split('-')[:-1])
-                rm_data['rm_name']: str = rm_name.replace(' ', '-')
-            logger.debug(f'RM data retrieved for {rm_id}: {rm_data["rm_rank"]}, {rm_data["rm_score"]}')
+                    await sleep(retry_delay)
+                    response: Response = get(f'https://www.root-me.org/{rm_name}', headers=HEADERS, cookies=cookies)
+                    if response.status_code == 404:
+                        rm_name: str = f'?{rm_name}'
+                rm_data['rm_name']: str = rm_name
+            logger.debug(
+                f'RM data retrieved for {rm_id}: {rm_data["rm_rank"]}, {rm_data["rm_score"]}, {rm_data["rm_name"]}'
+            )
             return rm_data
     except RequestException as e:
         logger.warning(f'Couldn\'t get RM score for {rm_id}. Error: {e}')

@@ -1,13 +1,12 @@
 import logging
 import re
-from datetime import datetime
 
 import discord
 from discord.ext import tasks
 
 from bot.embed_creation import create_profile_embed, create_help_embed
 from bot.pagination_view import PaginationView
-from database.crud_data import (get_data, update_data, get_data_organization_leaderboard, get_organization_rank)
+from database.crud_data import (update_data, get_data_organization_leaderboard, get_organization_rank)
 from database.crud_user import (get_user, update_user, insert_user)
 from database.models import User, DailyUserData
 from utils.api import (get_htb_data, get_rm_data, get_thm_data)
@@ -235,7 +234,7 @@ def setup_bot(
                     )
                     return None
                 else:
-                    rm_data = await get_rm_data(rm_id, rm_name_check=True)
+                    rm_data = await get_rm_data(rm_id, fast_mode=True)
                     if not rm_data:
                         await ctx.respond(
                             f':no_entry_sign: Oops! The RootMe ID `{rm_id}` doesn\'t exist.',
@@ -333,7 +332,7 @@ def setup_bot(
             updates_daily_data['htb_rank']: int = htb_data['htb_rank']
             updates_daily_data['htb_score']: int = htb_data['htb_score']
         if user.rm_id:
-            rm_data = await get_rm_data(user.rm_id)
+            rm_data = await get_rm_data(user.rm_id, fast_mode=True)
             updates_daily_data['rm_rank']: int = rm_data['rm_rank']
             updates_daily_data['rm_score']: int = rm_data['rm_score']
         if user.thm_id:

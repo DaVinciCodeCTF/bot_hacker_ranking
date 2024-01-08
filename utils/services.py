@@ -1,5 +1,6 @@
 from database.crud_data import update_data
-from database.crud_user import get_active_users, deactivate_user, get_deactivated_users, activate_user, delete_user
+from database.crud_user import get_active_users, deactivate_user, get_deactivated_users, activate_user, delete_user, \
+    update_user
 from database.models import User, DailyUserData
 from utils.api import get_htb_data, get_rm_data, get_thm_data
 
@@ -20,6 +21,9 @@ async def update_daily_data(user: User) -> DailyUserData:
     for platform, user_id in user_ids.items():
         if user_id:
             daily_data.update(await data_fetchers[platform](user_id))
+            if platform == 'rm':
+                user_data: dict = {'rm_name': daily_data.pop('rm_name')}
+                update_user(user, user_data)
 
     return update_data(user.discord_id, daily_data)
 
