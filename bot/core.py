@@ -1,5 +1,6 @@
 import logging
 import re
+import time
 
 import discord
 from discord.ext import tasks
@@ -7,7 +8,7 @@ from discord.ext import tasks
 from bot.embed_creation import create_profile_embed, create_help_embed
 from bot.pagination_view import PaginationView
 from database.crud_data import (update_data, get_data_organization_leaderboard, get_organization_rank)
-from database.crud_user import (get_user, update_user, insert_user)
+from database.crud_user import (get_user, update_user, insert_user, get_active_users, get_deactivated_users)
 from database.models import User, DailyUserData
 from utils.api import (get_htb_data, get_rm_data, get_thm_data)
 from utils.ressources import setup_emoji
@@ -80,9 +81,36 @@ def setup_bot(
         :return: None
         """
         members_ids: list[int] = [member.id for member in bot.get_guild(guild_id).members]
+        users: list[User] = get_active_users()
+        users_deactivated: list[User] = get_deactivated_users()
 
+        update_channel_id: int = channel_id[len(channel_id) - 1]
+        update_channel = bot.get_channel(update_channel_id)
+
+        start_embed = discord.Embed(
+            title="Updating scores ...",
+            description=f"Activated users: `{len(users)}`\nDeactivated users: `{len(users_deactivated)}`",
+            color=discord.Color.blue()
+        )
+        start_embed.set_thumbnail(url="https://i.gifer.com/ZKZg.gif")
+        message = await update_channel.send(embed=start_embed)
         logger.debug('Updating users score...')
-        await update_all_daily_data(members_ids, dev_mode)
+
+        start_time = time.time()
+        await update_all_daily_data(members_ids, users, users_deactivated, dev_mode)
+        duration = time.time() - start_time
+
+        end_embed = discord.Embed(
+            title="Update Complete",
+            description=f"Scores of users have been updated successfully!\n\n"
+                        f"Activated users: `{len(users)}`\n"
+                        f"Deactivated users: `{len(users_deactivated)}`"
+                        f"\n\nDuration: `{duration:.2f}` seconds",
+            color=discord.Color.green()
+        )
+        end_embed.set_thumbnail(url="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/"
+                                    "Eo_circle_green_checkmark.svg/1200px-Eo_circle_green_checkmark.svg.png")
+        await message.edit(content=None, embed=end_embed)
         logger.debug('Users score updated!')
 
     @bot.slash_command(
@@ -328,14 +356,17 @@ def setup_bot(
 
         updates_daily_data: dict = {}
         if user.htb_id:
+            logger.debug(f'Fetching HTB data for {user.htb_id}')
             htb_data = await get_htb_data(user.htb_id)
             updates_daily_data['htb_rank']: int = htb_data['htb_rank']
             updates_daily_data['htb_score']: int = htb_data['htb_score']
         if user.rm_id:
+            logger.debug(f'Fetching RM data for {user.rm_id}')
             rm_data = await get_rm_data(user.rm_id, fast_mode=True)
             updates_daily_data['rm_rank']: int = rm_data['rm_rank']
             updates_daily_data['rm_score']: int = rm_data['rm_score']
         if user.thm_id:
+            logger.debug(f'Fetching THM data for {user.thm_id}')
             thm_data = await get_thm_data(user.thm_id)
             updates_daily_data['thm_rank']: int = thm_data['thm_rank']
             updates_daily_data['thm_rooms']: int = thm_data['thm_rooms']

@@ -28,12 +28,20 @@ async def update_daily_data(user: User) -> DailyUserData:
     return update_data(user.discord_id, daily_data)
 
 
-async def update_all_daily_data(members_id: list[int], dev_mode: bool) -> None:
+async def update_all_daily_data(
+        members_id: list[int],
+        users: list[User],
+        users_deactivated: list[User],
+        dev_mode: bool
+) -> None:
     """
     Update the daily datas of all users
+    :param members_id: list[int], all members ids
+    :param users: list[User], all users
+    :param users_deactivated: list[User], all deactivated users
+    :param dev_mode: bool, dev mode
     :return: None
     """
-    users: list[User] = get_active_users()
 
     if not dev_mode:
         # Remove users with no ids
@@ -47,7 +55,6 @@ async def update_all_daily_data(members_id: list[int], dev_mode: bool) -> None:
                 users.remove(user)
                 deactivate_user(user)
         # Check if deactivated users are back in the server
-        users_deactivated: list[User] = get_deactivated_users()
         for user in users_deactivated:
             if user.discord_id in members_id:
                 users.append(user)

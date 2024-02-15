@@ -75,7 +75,7 @@ async def get_rm_data(rm_id: int, fast_mode: bool = False) -> dict:
                         rm_name: str = f'?{rm_name}'
                 rm_data['rm_name']: str = rm_name
             logger.debug(
-                f'RM data retrieved for {rm_id}: {rm_data["rm_rank"]}, {rm_data["rm_score"]}, {rm_data["rm_name"]}'
+                f'RM data retrieved for {rm_id}: {rm_data["rm_rank"]}, {rm_data["rm_score"]}'
             )
             return rm_data
     except RequestException as e:
