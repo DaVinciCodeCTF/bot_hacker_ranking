@@ -91,16 +91,17 @@ class DatabaseManager:
         :return: None
         """
         users_data_str: str = """
-        discord_id,username,htb_id,rm_id,thm_id
+        discord_id,username,birthday,htb_id,rm_id,thm_id
         """
 
         users_to_add: list = []
         for user_data in users_data_str.strip().split('\n'):
-            discord_id, username, htb_id, rm_id, thm_id = user_data.split(',')
+            discord_id, username, birthday, htb_id, rm_id, thm_id = user_data.split(',')
 
             user_dict = {
                 'discord_id': discord_id,
                 'username': username,
+                'birthday': birthday if birthday != '""' else None,
                 'htb_id': htb_id if htb_id != '""' else None,
                 'rm_id': rm_id if rm_id != '""' else None,
                 'thm_id': thm_id if thm_id != '""' else None

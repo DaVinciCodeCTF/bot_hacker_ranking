@@ -17,6 +17,7 @@ class User(Base):
     discord_id: int = Column(Integer, primary_key=True, index=True, comment='Discord ID of the user')
     username: str = Column(String, index=True, comment='Username of the user visible on the leaderboard')
     active: bool = Column(Integer, default=True, comment='Whether the user is active or not')
+    birthday: Date = Column(Date, comment='Birthday of the user')
 
     # External platform IDs
     htb_id: int = Column(Integer, comment='HackTheBox UID of the user, visible on https://app.hackthebox.com/profile/')
@@ -25,7 +26,7 @@ class User(Base):
     thm_id: str = Column(String, comment='TryHackMe username of the user, visible on https://tryhackme.com/profile')
 
     def __repr__(self):
-        return (f'<User(username={self.username}, discord_id={self.discord_id},'
+        return (f'<User(username={self.username}, discord_id={self.discord_id}, birthday={self.birthday},'
                 f' htb_id={self.htb_id}, rm_id={self.rm_id}, thm_id={self.thm_id})>')
 
 

@@ -35,6 +35,10 @@ help_fields: list[dict] = [
                  '`username` field\n\u200b',
     },
     {
+        'name': 'Set your birthday ... We may of may not be responsible for what might happen 🎉',
+        'value': '`/update <user>[opt]`\n\u200b',
+    },
+    {
         'name': 'Display the profile of a user, or yours if no user is given',
         'value': '`/profile <user>[opt]`\n\u200b',
     },
@@ -260,3 +264,25 @@ def create_profile_embed(
         icon_url=author.avatar if author.avatar else None
     )
     return profile_embed
+
+
+
+def create_birthday_embed(member: discord.Member) -> discord.Embed:
+    """
+    Create a happy birthday embed message.
+    :param member: discord.Member, the member whose birthday it is
+    :return: discord.Embed, birthday embed
+    """
+    birthday_embed = discord.Embed(
+        title="🎉 Happy Birthday! 🎉",
+        description=f"Happy Birthday, {member.display_name}! 🎂🎈",
+        colour=discord.Colour.gold()
+    )
+    birthday_embed.set_thumbnail(url=member.avatar if member.avatar else None)
+    birthday_embed.timestamp = datetime.utcnow()
+    birthday_embed.set_image(url="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZWN2NHAwbjlyZGFqMjNiYWUycGN0cGszbGdmZzluYzZzbGxtc3Y5ZyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/LTpmRMNSmZgIw/giphy.gif")
+    birthday_embed.set_footer(
+        text=f"Bon anniversaire ! - L'équipe DVC",
+        icon_url=member.guild.icon if member.guild.icon else None
+    )
+    return birthday_embed

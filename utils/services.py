@@ -1,5 +1,5 @@
 from database.crud_data import update_data
-from database.crud_user import get_active_users, deactivate_user, get_deactivated_users, activate_user, delete_user, \
+from database.crud_user import deactivate_user, activate_user, delete_user, \
     update_user
 from database.models import User, DailyUserData
 from utils.api import get_htb_data, get_rm_data, get_thm_data

@@ -4,6 +4,8 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from database.manager import DatabaseManager
 from database.models import User
+from sqlalchemy import extract
+from datetime import date
 
 logger = logging.getLogger(__name__)
 SessionLocal = DatabaseManager.get_session_local
@@ -162,3 +164,21 @@ def delete_user(user: User) -> None:
         except SQLAlchemyError:
             db.rollback()
             raise
+
+
+def get_users_with_birthday_today():
+    db = SessionLocal()
+    today = date.today()
+    try:
+        logger.info(f'Today: {today}')
+        logger.info(db.query(User).filter().all())
+        users = db.query(User).filter(
+            extract('month', User.birthday) == today.month,
+            extract('day', User.birthday) == today.day
+        ).all()
+        logger.info(f'Users with birthday today retrieved from the database: {len(users)}')
+        return users
+
+    except Exception as e:
+        print(e)
+        return []

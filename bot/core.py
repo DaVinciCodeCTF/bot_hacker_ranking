@@ -5,7 +5,7 @@ import time
 import discord
 from discord.ext import tasks
 
-from bot.embed_creation import create_profile_embed, create_help_embed
+from bot.embed_creation import create_profile_embed, create_help_embed, create_birthday_embed #for birthday
 from bot.pagination_view import PaginationView
 from database.crud_data import (update_data, get_data_organization_leaderboard, get_organization_rank)
 from database.crud_user import (get_user, update_user, insert_user, get_active_users, get_deactivated_users)
@@ -13,6 +13,8 @@ from database.models import User, DailyUserData
 from utils.api import (get_htb_data, get_rm_data, get_thm_data)
 from utils.ressources import setup_emoji
 from utils.services import update_all_daily_data
+from database.crud_user import get_users_with_birthday_today
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +22,7 @@ logger = logging.getLogger(__name__)
 def setup_bot(
         guild_id: int,
         channel_id: list[int],
+        birthday_channel_id: int,
         update_interval: int,
         organization_name: str,
         dev_mode: bool = False
@@ -45,6 +48,7 @@ def setup_bot(
 
         logger.info(f'{bot.user} is ready and online!')
 
+        check_birthdays.start()
         update_users_score.start()
 
     @bot.event
@@ -113,6 +117,27 @@ def setup_bot(
         await message.edit(content=None, embed=end_embed)
         logger.debug('Users score updated!')
 
+    @tasks.loop(hours=24)
+    async def check_birthdays() -> None:
+        """
+        Every 24 hrs, check if any user has a birthday today.
+        :return: None
+        """
+        users_with_birthday = get_users_with_birthday_today()
+        logger.info(f'Checking birthdays... {len(users_with_birthday)} users have a birthday today.')
+
+        if users_with_birthday:
+            birthday_channel = bot.get_channel(birthday_channel_id)
+
+            for user in users_with_birthday:
+                member = bot.get_guild(guild_id).get_member(user.discord_id)
+                if member:
+                    birthday_embed = create_birthday_embed(member)
+                    await birthday_channel.send(embed=birthday_embed)
+                    logger.info(f'Sent birthday message for {member.display_name}')
+        else:
+            logger.info('No birthdays today.')
+
     @bot.slash_command(
         name='register',
         description='Register yourself to the database, you need to do this before using the bot',
@@ -169,7 +194,7 @@ def setup_bot(
                 str,
                 description='Your leaderboard username (alphanumeric, -, _, . between 3 and 25 characters)',
                 required=False
-            ),
+            ), birthday: discord.Option(str, description='Your birthday (DD/MM/YYYY)', required=False),
             htb_id: discord.Option(
                 int,
                 description='Your HackTheBox user ID',
@@ -194,9 +219,9 @@ def setup_bot(
         :param rm_id: int, RootMe user ID of the user
         :param thm_id: str, TryHackMe user ID of the user
         """
-        logger.debug(f'User @{ctx.author} updating profile: {username=}, {htb_id=}, {rm_id=}, {thm_id=}')
+        logger.debug(f'User @{ctx.author} updating profile: {username=},{birthday=} ,{htb_id=}, {rm_id=}, {thm_id=}')
 
-        if not username and not htb_id and not rm_id and not thm_id:
+        if not username and not htb_id and not rm_id and not thm_id and not birthday:
             await ctx.respond(
                 ':warning: You need to provide at least one argument.',
                 ephemeral=True
@@ -233,6 +258,17 @@ def setup_bot(
                     return None
                 else:
                     updates_user['username']: str = username
+
+            if birthday:
+                try:
+                    birthday_obj = datetime.strptime(birthday, "%d/%m/%Y")
+                    updates_user['birthday'] = birthday_obj
+                except ValueError:
+                    await ctx.respond(
+                        f':closed_lock_with_key: Hmm... `{birthday}` doesn\'t seem like a valid birthday.',
+                        ephemeral=True
+                    )
+                    return None
 
             if htb_id:
                 if re.match(r'^([0-9]{1,9})$', str(htb_id)) is None:
@@ -346,7 +382,7 @@ def setup_bot(
             await ctx.respond(message, ephemeral=True)
             return None
 
-        if not user.htb_id and not user.rm_id and not user.thm_id:
+        if not user.birthday and not user.htb_id and not user.rm_id and not user.thm_id:
             message = (f':no_entry_sign: {display_name} need{"s" if not is_author else ""} to update '
                        f'{"their" if not is_author else "your"} profile using the `/update` command first.')
             await ctx.respond(message, ephemeral=True)

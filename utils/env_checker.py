@@ -5,6 +5,10 @@ import hvac
 
 logger = logging.getLogger(__name__)
 
+def get_birthday_channel_id():
+    if "BIRTHDAY_CHANNEL_ID" not in os.environ:
+        raise EnvironmentError("BIRTHDAY_CHANNEL_ID not set in environment variables.")
+    return int(os.environ["BIRTHDAY_CHANNEL_ID"])
 
 def retrieve_vault_secret(vault_client: hvac.Client, secret_path: str, secret_name: str) -> str:
     """

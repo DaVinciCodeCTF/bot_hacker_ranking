@@ -50,6 +50,7 @@ Create a `.env` file with the following variables in the root of the project:
 DISCORD_TOKEN=discord_token
 RM_API_KEY=root_me_api_key
 
+BIRTHDAY_CHANNEL_ID=bday_channel_id
 DISCORD_GUILD_ID=guild_id
 DISCORD_CHANNEL_ID=[channel_id1, channel_id2, ...]
 ORGANIZATION_NAME=organization_name
@@ -70,11 +71,12 @@ DEV_DISCORD_TOKEN=dev_discord_token
 2. `RM_API_KEY`: Root Me API key, you can get one [here](https://www.root-me.org/?page=preferences&inc=infos).
 3. `DISCORD_GUILD_ID`: Discord guild id, you can get it by activating the developer mode in Discord and right-clicking
    on the guild.
-4. `DISCORD_CHANNEL_ID`: Discord channel id, you can get it by activating the developer mode in Discord and
-   right-clicking on the channel.
-5. `ORGANIZATION_NAME`: Will be the name displayed on the embeds.
-6. `DATABASE_PATH`: Path to the database file, will be created if it doesn't exist.
-7. `UPDATE_INTERVAL`: Interval in minutes between each update of the leaderboard. (Suggestion: 240)
+4. `BIRTHDAY_CHANNEL_ID`: Discord channel id, you can get it by activating the developer mode in Discord and right-clicking on the channel.
+5. `DISCORD_CHANNEL_ID`: Discord channel id, you can get it by activating the developer mode in Discord and
+   right-clicking on the channel. you can add multiple Ids, separated by a comma.
+6. `ORGANIZATION_NAME`: Will be the name displayed on the embeds.
+7. `DATABASE_PATH`: Path to the database file, will be created if it doesn't exist.
+8. `UPDATE_INTERVAL`: Interval in minutes between each update of the leaderboard. (Suggestion: 240)
 
 **Optional:**
 
