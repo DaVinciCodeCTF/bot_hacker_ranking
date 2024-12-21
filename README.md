@@ -56,6 +56,7 @@ DISCORD_CHANNEL_ID=[channel_id1, channel_id2, ...]
 ORGANIZATION_NAME=organization_name
 DATABASE_PATH=database_path
 UPDATE_INTERVAL=update_interval
+BIRTHDAY_CHANNEL_ID=bd_id
 
 VAULT_TOKEN=vault_token
 VAULT_URL=vault_url
