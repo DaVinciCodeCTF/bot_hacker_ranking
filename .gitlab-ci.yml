@@ -1,0 +1,13 @@
+stages:
+  - test
+
+test:
+  stage: test
+  image: python:3.11
+  tags:
+    - python
+  before_script:
+    - pip install --upgrade pip
+    - pip install -r requirements.txt
+  script:
+    - python -m pytest
