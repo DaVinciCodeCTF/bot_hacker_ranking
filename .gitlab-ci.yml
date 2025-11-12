@@ -1,8 +1,9 @@
 stages:
-  - test
+  - Test
+  - Build
 
-test:
-  stage: test
+Test:
+  stage: Test
   image: python:3.11
   tags:
     - python
@@ -11,3 +12,21 @@ test:
     - pip install -r requirements.txt
   script:
     - python -m pytest
+
+Build:
+  stage: Build
+  image: docker:24.0.6
+  services:
+    # Necessary to run docker inside docker
+    - name: docker:24.0.6-dind
+      alias: docker
+  tags:
+    - docker
+  variables:
+    # Use the most modern and maintained storage driver
+    DOCKER_DRIVER: overlay2
+    DOCKER_HOST: "tcp://docker:2375"
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - docker info
+    - docker build -t bot_hacker_ranking .
