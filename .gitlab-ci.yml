@@ -2,6 +2,18 @@ stages:
   - Test
   - Build
 
+pip_audit:
+  stage: Test
+  image: python:3.11
+  tags:
+    - python
+  before_script:
+    - pip install --upgrade pip
+    - pip install pip-audit
+    - pip install -r requirements.txt
+  script:
+    - pip-audit -v -r requirements.txt
+
 Test:
   stage: Test
   image: python:3.11
