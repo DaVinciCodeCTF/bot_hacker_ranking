@@ -177,3 +177,34 @@ def get_rm_api_key() -> str:
 
     logger.debug(f'RM API key retrieved: {rm_api_key[:10]}...')
     return rm_api_key
+
+def get_status_api_url() -> str:
+    value = os.environ.get("STATUS_API_URL")
+    if not value:
+        raise ValueError("STATUS_API_URL is not set in environment variables.")
+    return value
+
+
+def get_status_api_key() -> str:
+    value = os.environ.get("STATUS_API_KEY")
+    if not value:
+        raise ValueError("STATUS_API_KEY is not set in environment variables.")
+    return value
+
+
+def get_status_channel_id() -> int:
+    value = os.environ.get("STATUS_CHANNEL_ID")
+    if not value:
+        raise ValueError("STATUS_CHANNEL_ID is not set in environment variables.")
+    try:
+        return int(value)
+    except ValueError:
+        raise ValueError("STATUS_CHANNEL_ID is not a valid integer.")
+
+
+def get_status_poll_interval() -> int:
+    value = os.environ.get("STATUS_POLL_INTERVAL", "10")
+    try:
+        return int(value)
+    except ValueError:
+        raise ValueError("STATUS_POLL_INTERVAL is not a valid integer.")
