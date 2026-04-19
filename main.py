@@ -5,9 +5,10 @@ import discord
 from bot.core import setup_bot
 from database.manager import DatabaseManager
 from utils.env_checker import (
-    get_discord_token, get_discord_guild_id, get_discord_channel_id,get_birthday_channel_id,
+    get_discord_token, get_discord_guild_id, get_discord_channel_id, get_birthday_channel_id,
     get_organization_name, get_database_path, get_rm_api_key, get_update_interval,
-    get_dev_mode
+    get_dev_mode, get_status_api_url, get_status_api_key,
+    get_status_channel_id, get_status_poll_interval
 )
 
 
@@ -31,6 +32,11 @@ def main() -> None:
     update_interval: int = get_update_interval()
     rm_api_key: str = get_rm_api_key()
 
+    status_api_url: str = get_status_api_url()
+    status_api_key: str = get_status_api_key()
+    status_channel_id: int = get_status_channel_id()
+    status_poll_interval: int = get_status_poll_interval()
+
     DatabaseManager(database_path).create_database()
 
     bot_instance: discord.Bot = setup_bot(
@@ -40,6 +46,10 @@ def main() -> None:
         update_interval=update_interval,
         organization_name=organization_name,
         dev_mode=dev_mode,
+        status_api_url=status_api_url,
+        status_api_key=status_api_key,
+        status_channel_id=status_channel_id,
+        status_poll_interval=status_poll_interval,
     )
 
     bot_instance.run(discord_token)

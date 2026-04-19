@@ -13,6 +13,7 @@ from database.models import User, DailyUserData
 from utils.api import (get_htb_data, get_rm_data, get_thm_data)
 from utils.ressources import setup_emoji
 from utils.services import update_all_daily_data
+from utils.status_api import fetch_and_decrypt_status
 from database.crud_user import get_users_with_birthday_today
 from datetime import datetime
 
@@ -25,6 +26,10 @@ def setup_bot(
         birthday_channel_id: int,
         update_interval: int,
         organization_name: str,
+        status_api_url: str,
+        status_api_key: str,
+        status_channel_id: int,
+        status_poll_interval: int = 10,
         dev_mode: bool = False
 ) -> discord.Bot:
     intents = discord.Intents.default()
@@ -32,6 +37,7 @@ def setup_bot(
     bot = discord.Bot(intents=intents)
 
     guild_emojis: dict = {}
+    status_message_id: int | None = None
 
     @bot.event
     async def on_ready() -> None:
@@ -50,6 +56,9 @@ def setup_bot(
 
         check_birthdays.start()
         update_users_score.start()
+
+        if not status_watcher.is_running():
+            status_watcher.start()
 
     @bot.event
     async def on_application_command_error(ctx, error) -> None:
@@ -137,6 +146,160 @@ def setup_bot(
                     logger.info(f'Sent birthday message for {member.display_name}')
         else:
             logger.info('No birthdays today.')
+
+    def _format_latency(latency_raw) -> str:
+        """
+        Status-checker returns latency in nanoseconds.
+        Convert to a human readable string.
+        """
+        try:
+            ns = int(latency_raw)
+        except (TypeError, ValueError):
+            return "n/a"
+
+        if ns < 1_000:
+            return f"{ns} ns"
+        if ns < 1_000_000:
+            return f"{ns / 1_000:.2f} µs"
+        if ns < 1_000_000_000:
+            return f"{ns / 1_000_000:.2f} ms"
+        return f"{ns / 1_000_000_000:.2f} s"
+
+    def _chunk_lines_for_embed(lines: list[str], max_len: int = 1024) -> list[str]:
+        chunks = []
+        current = ""
+
+        for line in lines:
+            candidate = f"{current}\n{line}" if current else line
+            if len(candidate) <= max_len:
+                current = candidate
+            else:
+                if current:
+                    chunks.append(current)
+                # If a line overlap, trunk it.
+                if len(line) > max_len:
+                    chunks.append(line[:max_len - 3] + "...")
+                    current = ""
+                else:
+                    current = line
+
+        if current:
+            chunks.append(current)
+
+        return chunks
+
+    @tasks.loop(minutes=status_poll_interval)
+    async def status_watcher() -> None:
+        """
+        Poll encrypted infrastructure status every X minutes
+        and keep a single message updated in STATUS_CHANNEL_ID.
+        """
+        nonlocal status_message_id
+
+        status_channel = bot.get_channel(status_channel_id)
+        if status_channel is None:
+            logger.warning(f"Status channel not found: {status_channel_id}")
+            return
+
+        # Fetch + decrypt
+        try:
+            data = fetch_and_decrypt_status(status_api_url, status_api_key)
+        except Exception as e:
+            logger.warning(f"Failed to fetch/decrypt status payload: {e}")
+
+            # Build error embed, still update the same message
+            error_embed = discord.Embed(
+                title="Infrastructure Status",
+                description="Unable to fetch/decrypt monitoring data.",
+                color=discord.Color.red()
+            )
+            error_embed.timestamp = datetime.utcnow()
+            error_embed.set_footer(
+                text=f"Last sync (UTC): {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}"
+            )
+
+            if status_message_id is not None:
+                try:
+                    msg = await status_channel.fetch_message(status_message_id)
+                    await msg.edit(embed=error_embed)
+                    return
+                except Exception:
+                    status_message_id = None
+
+            msg = await status_channel.send(embed=error_embed)
+            status_message_id = msg.id
+            return
+
+        # Build global status embed
+        services = sorted(
+            data.values(),
+            key=lambda s: s.get("service_name", "").lower()
+        )
+
+        total = len(services)
+        up_count = sum(1 for s in services if s.get("status") == "up")
+        degraded_count = sum(1 for s in services if s.get("status") == "degraded")
+        down_count = sum(1 for s in services if s.get("status") == "down")
+
+        if down_count > 0:
+            color = discord.Color.red()
+            global_state = "Degraded"
+        elif degraded_count > 0:
+            color = discord.Color.orange()
+            global_state = "Warning"
+        else:
+            color = discord.Color.green()
+            global_state = "Operational"
+
+        embed = discord.Embed(
+            title="Infrastructure Status",
+            description=(
+                f"Global state: **{global_state}**\n"
+                f"Services: `{total}` | Up: `{up_count}` | Degraded: `{degraded_count}` | Down: `{down_count}`"
+            ),
+            color=color
+        )
+
+        lines = []
+        for service_key, service_data in sorted(data.items(), key=lambda i: i[0].lower()):
+            service_name = service_data.get("service_name", service_key)
+            status = service_data.get("status", "unknown")
+            latency = _format_latency(service_data.get("latency"))
+            message = service_data.get("message", "")
+
+            icon = "🟢" if status == "up" else "🟠" if status == "degraded" else "🔴"
+            lines.append(f"{icon} **{service_name}** — `{status}` — `{latency}` — {message}")
+
+        chunks = _chunk_lines_for_embed(lines, 1024)
+
+        if not chunks:
+            embed.add_field(name="Service details", value="No services returned.", inline=False)
+        else:
+            for idx, chunk in enumerate(chunks, start=1):
+                field_name = "Service details" if idx == 1 else f"Service details (cont. {idx})"
+                embed.add_field(name=field_name, value=chunk, inline=False)
+                embed.timestamp = datetime.utcnow()
+                embed.set_footer(
+            text=f"Last sync (UTC): {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}"
+        )
+
+        # Edit existing message or create it once
+        if status_message_id is not None:
+            try:
+                msg = await status_channel.fetch_message(status_message_id)
+                await msg.edit(embed=embed)
+                logger.debug("Status message updated.")
+                return
+            except Exception:
+                status_message_id = None
+
+        msg = await status_channel.send(embed=embed)
+        status_message_id = msg.id
+        logger.info(f"Status message created with id={status_message_id}")
+
+    @status_watcher.before_loop
+    async def before_status_watcher() -> None:
+        await bot.wait_until_ready()
 
     @bot.slash_command(
         name='register',
