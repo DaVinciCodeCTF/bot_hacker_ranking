@@ -147,6 +147,24 @@ def setup_bot(
         else:
             logger.info('No birthdays today.')
 
+    def _format_latency(latency_raw) -> str:
+        """
+        Status-checker returns latency in nanoseconds.
+        Convert to a human readable string.
+        """
+        try:
+            ns = int(latency_raw)
+        except (TypeError, ValueError):
+            return "n/a"
+
+        if ns < 1_000:
+            return f"{ns} ns"
+        if ns < 1_000_000:
+            return f"{ns / 1_000:.2f} µs"
+        if ns < 1_000_000_000:
+            return f"{ns / 1_000_000:.2f} ms"
+        return f"{ns / 1_000_000_000:.2f} s"
+
     @tasks.loop(minutes=status_poll_interval)
     async def status_watcher() -> None:
         """
@@ -223,7 +241,7 @@ def setup_bot(
         for service_key, service_data in sorted(data.items(), key=lambda i: i[0].lower()):
             service_name = service_data.get("service_name", service_key)
             status = service_data.get("status", "unknown")
-            latency = service_data.get("latency", "n/a")
+            latency = _format_latency(service_data.get("latency"))
             message = service_data.get("message", "")
 
             icon = "🟢" if status == "up" else "🟠" if status == "degraded" else "🔴"
