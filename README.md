@@ -65,6 +65,11 @@ DEV_MODE=dev_mode
 DEV_DISCORD_GUILD_ID=dev_guild_id
 DEV_DISCORD_CHANNEL_ID=[dev_channel_id1, dev_channel_id2, ...]
 DEV_DISCORD_TOKEN=dev_discord_token
+
+STATUS_API_URL=status_api_url
+STATUS_CHANNEL_ID=status_channel_id
+STATUS_POLL_INTERVAL=poll_interval_in_minutes
+STATUS_API_KEY=secret_api_key
 ```
 
 1. `DISCORD_TOKEN`: Discord bot token, you can get one [here](https://discord.com/developers/applications). **Be careful
@@ -78,6 +83,14 @@ DEV_DISCORD_TOKEN=dev_discord_token
 6. `ORGANIZATION_NAME`: Will be the name displayed on the embeds.
 7. `DATABASE_PATH`: Path to the database file, will be created if it doesn't exist.
 8. `UPDATE_INTERVAL`: Interval in minutes between each update of the leaderboard. (Suggestion: 240)
+9. `STATUS_API_URL`: URL where the status api can be reached. Should be **statuts.davincicode.fr/status**
+10. `STATUS_API_KEY`: Secret key used to decipher api output. Can be found on the running instance of the [status-checker](https://github.com/DaVinciCodeCTF/status-checker) utility in proxmox.
+
+> [!IMPORTANT]
+> `STATUS_API_URL`, `STATUS_API_KEY` and `STATUS_CHANNEL_ID` are required for the bot startup.
+> - If the status endpoint is temporarily unreachable, the bot does not crash.
+> - If the `STATUS_CHANNEL_ID` does not resolve to a channel at runtime, the bot does not crash.
+> - Everything is logged.
 
 **Optional:**
 
