@@ -165,6 +165,29 @@ def setup_bot(
             return f"{ns / 1_000_000:.2f} ms"
         return f"{ns / 1_000_000_000:.2f} s"
 
+    def _chunk_lines_for_embed(lines: list[str], max_len: int = 1024) -> list[str]:
+        chunks = []
+        current = ""
+
+        for line in lines:
+            candidate = f"{current}\n{line}" if current else line
+            if len(candidate) <= max_len:
+                current = candidate
+            else:
+                if current:
+                    chunks.append(current)
+                # If a line overlap, trunk it.
+                if len(line) > max_len:
+                    chunks.append(line[:max_len - 3] + "...")
+                    current = ""
+                else:
+                    current = line
+
+        if current:
+            chunks.append(current)
+
+        return chunks
+
     @tasks.loop(minutes=status_poll_interval)
     async def status_watcher() -> None:
         """
@@ -247,13 +270,16 @@ def setup_bot(
             icon = "🟢" if status == "up" else "🟠" if status == "degraded" else "🔴"
             lines.append(f"{icon} **{service_name}** — `{status}` — `{latency}` — {message}")
 
-        details = "\n".join(lines) if lines else "No services returned."
-        if len(details) > 3500:
-            details = details[:3500] + "\n..."
+        chunks = _chunk_lines_for_embed(lines, 1024)
 
-        embed.add_field(name="Service details", value=details, inline=False)
-        embed.timestamp = datetime.utcnow()
-        embed.set_footer(
+        if not chunks:
+            embed.add_field(name="Service details", value="No services returned.", inline=False)
+        else:
+            for idx, chunk in enumerate(chunks, start=1):
+                field_name = "Service details" if idx == 1 else f"Service details (cont. {idx})"
+                embed.add_field(name=field_name, value=chunk, inline=False)
+                embed.timestamp = datetime.utcnow()
+                embed.set_footer(
             text=f"Last sync (UTC): {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}"
         )
 
